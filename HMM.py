@@ -81,19 +81,20 @@ class HMM:
         时间复杂度O(N*N*T)
     '''
     def backward_algorithm(self,observe_sequence):
-        a=[0.0 for i in range(self.status_numbers)]
-        index=self.Observations.index(observe_sequence[0])
-        for i in range(self.status_numbers):
-            a[i]=self.initial_state_probability_distribution[i]*self.probability_distribution_FromStatusObserve[i][index]
-        for i in range(1,len(observe_sequence)):#T
+        a=[1.0 for i in range(self.status_numbers)]
+        s=len(observe_sequence)-1
+        while s>=0:
             buff=a.copy()
-            index=self.Observations.index(observe_sequence[i])
-            for j in range(self.status_numbers):#N
+            index=self.Observations.index(observe_sequence[s])
+            for i in range(self.status_numbers):
                 sum=0
-                for k in range(self.status_numbers):#N
-                    sum+=buff[k]*self.trans_matrix_SiToSj[k][j]
-                a[j]=sum*self.probability_distribution_FromStatusObserve[j][index]
+                for j in range(self.status_numbers):
+                    sum+=self.trans_matrix_SiToSj[i][j]*self.probability_distribution_FromStatusObserve[j][index]*buff[j]
+                a[i]=sum
+            s-=1
+
+        index=self.Observations.index(observe_sequence[0])
         sum=0
-        for i in range(len(a)):
-            sum+=a[i]
+        for i in range(self.status_numbers):
+            sum+=self.initial_state_probability_distribution[i]*self.probability_distribution_FromStatusObserve[i][index]*buff[i]
         return sum
