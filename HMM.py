@@ -1,5 +1,4 @@
 '''
-(2)在给定模型 =(A, B, pi) 和观察序列 O＝O1O2 …OT 的情况下，如何选择在一定意义下“最优”的状态 序列 Q = q1 q2 … qT，使得该状态序列“最好地解 释”观察序列？
 (3)给定一个观察序列O＝O1O2 …OT ，如何根据最大 似然估计来求模型的参数值？即如何调节模型的参 数，使得p(O|) 最大？
 '''
 class HMM:
@@ -98,3 +97,46 @@ class HMM:
         for i in range(self.status_numbers):
             sum+=self.initial_state_probability_distribution[i]*self.probability_distribution_FromStatusObserve[i][index]*buff[i]
         return sum
+
+    '''
+    在给定模型 =(A, B, pi) 和观察序列 O＝O1O2 …OT 的情况下，选择在一定意义下“最优”的状态 序列 Q = q1 q2 … qT，使得该状态序列“最好地解 释”观察序列
+    第一种解释：
+        (1) 模型在时间 t 到达状态 i, 并且输出O＝O1O2 …OT。 根据前向变量的定义，实现这一步的概率为at(i)。
+        (2) 从时间 t，状态 Si 出发，模型输出O＝O1O2 …OT， 根据后向变量定义，实现这一步的概率为bt(i)。
+        于是： p（qt=si,O|u）=at(i)*bt(i)
+        相当于 给出观测序列，找的不是整体最大可能的路线 而是 找到t时刻最可能的状态
+    '''
+    def viterbi_method1(self,observe_sequence,t):
+        #通过前向传播计算t
+        a=[0.0 for i in range(self.status_numbers)]
+        index=self.Observations.index(observe_sequence[0])
+        for i in range(self.status_numbers):
+            a[i]=self.initial_state_probability_distribution[i]*self.probability_distribution_FromStatusObserve[i][index]
+        for i in range(1,t):#T
+            buff=a.copy()
+            index=self.Observations.index(observe_sequence[i])
+            for j in range(self.status_numbers):#N
+                sum=0
+                for k in range(self.status_numbers):#N
+                    sum+=buff[k]*self.trans_matrix_SiToSj[k][j]
+                a[j]=sum*self.probability_distribution_FromStatusObserve[j][index]
+        #通过后向传播计算Bt
+        b=[1.0 for i in range(self.status_numbers)]
+        s=len(observe_sequence)-1
+        while s>=t:
+            buff=b.copy()
+            index=self.Observations.index(observe_sequence[s])
+            for i in range(self.status_numbers):
+                sum=0
+                for j in range(self.status_numbers):
+                    sum+=self.trans_matrix_SiToSj[i][j]*self.probability_distribution_FromStatusObserve[j][index]*buff[j]
+                b[i]=sum
+            s-=1
+        #求argmax使得At*Bt最大
+        max=0
+        s=0
+        for i in range(self.status_numbers):
+            if a[i]*b[i]>max:
+                max=a[i]*b[i]
+                s=i
+        return s
